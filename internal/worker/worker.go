@@ -68,10 +68,9 @@ func (w *Worker) control(path string) {
 
 func (w *Worker) checkURLs(urls []string) {
 	i := 1
-	fmt.Printf(color.BLUESTART)
 	// TODO: Add worker pool instead of spawning goroutines
 	for _, url := range urls {
-		ticker := time.NewTicker(1 * time.Second)
+		ticker := time.NewTicker(5 * time.Second)
 		done := make(chan bool)
 		w.doneList = append(w.doneList, done)
 		go w.checkURL(url, ticker, done, i)
@@ -85,7 +84,7 @@ func (w *Worker) checkURL(url string, ticker *time.Ticker, done chan bool, gid i
 		case <-done:
 			return
 		case _ = <-ticker.C:
-			fmt.Printf("WORKER : ID %s : GOROUTINE %d : checking URL %s\n", w.id, gid, url)
+			fmt.Printf("%sWORKER : ID %s : GOROUTINE %d : checking URL %s%s\n", color.BLUESTART, w.id, gid, url, color.BLUEEND)
 		}
 	}
 }
@@ -99,6 +98,5 @@ func (w *Worker) stopAllChecks() {
 	for _, d := range w.doneList {
 		d <- true
 	}
-	fmt.Printf(color.BLUEEND)
 	w.doneList = w.doneList[:0]
 }
