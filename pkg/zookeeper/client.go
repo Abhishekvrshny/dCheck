@@ -45,7 +45,7 @@ func (zClient *ZookeeperClient) LeaderElection(path string, startFunc, stopFunc 
 	if !exists {
 		_, err = zClient.Create(path, []byte(""), 0, zk.WorldACL(zk.PermAll), true)
 		if err != nil && err != zk.ErrNodeExists {
-			return nil, fmt.Errorf( "zookeeper unable to create LeaderElection path %s, error %s", path, err.Error())
+			return nil, fmt.Errorf("zookeeper unable to create LeaderElection path %s, error %s", path, err.Error())
 		}
 	}
 
@@ -97,7 +97,7 @@ func (zClient *ZookeeperClient) LeaderElection(path string, startFunc, stopFunc 
 				if zErr = zClient.conn.Delete(selfPath, -1); zErr != nil && zErr != zk.ErrNoNode {
 					fmt.Printf("zookeeper error deleting path %s", selfPath)
 				}
-					os.Exit(102)
+				os.Exit(102)
 			}
 		}
 		retryCount = 0
@@ -169,7 +169,7 @@ func (zClient *ZookeeperClient) LeaderElection(path string, startFunc, stopFunc 
 func (zClient *ZookeeperClient) Exists(path string) (bool, error) {
 	ok, _, err := zClient.conn.Exists(path)
 	if err != nil {
-		return false, fmt.Errorf( "zookeeper exists %s failed with error %s", path, err.Error())
+		return false, fmt.Errorf("zookeeper exists %s failed with error %s", path, err.Error())
 	}
 	return ok, nil
 }
@@ -181,11 +181,11 @@ func (zClient *ZookeeperClient) Create(path string, data []byte, flags int32, ac
 
 	exists, err = zClient.Exists(path)
 	if err != nil {
-		return "", fmt.Errorf( "zookeeper exists %s failed with error %s", path, err.Error())
+		return "", fmt.Errorf("zookeeper exists %s failed with error %s", path, err.Error())
 	}
 
 	if exists {
-		return "", fmt.Errorf( "zookeeper node already exists")
+		return "", fmt.Errorf("zookeeper node already exists")
 	}
 
 	if createParentContainerNodes {
@@ -202,7 +202,7 @@ func (zClient *ZookeeperClient) Create(path string, data []byte, flags int32, ac
 				if !ok {
 					intermediatePath, err := zClient.conn.Create(intermediatePath, []byte(""), 0, zk.WorldACL(zk.PermAll))
 					if err != nil {
-						return "", fmt.Errorf( "zookeeper %s create failed with error %s", intermediatePath, err.Error())
+						return "", fmt.Errorf("zookeeper %s create failed with error %s", intermediatePath, err.Error())
 					}
 				}
 			}
@@ -211,7 +211,7 @@ func (zClient *ZookeeperClient) Create(path string, data []byte, flags int32, ac
 
 	str, err := zClient.conn.Create(path, data, flags, acl)
 	if err != nil {
-		return "", fmt.Errorf( "zookeeper %s create failed with error %s", path, err.Error())
+		return "", fmt.Errorf("zookeeper %s create failed with error %s", path, err.Error())
 	}
 	return str, nil
 }
@@ -261,7 +261,7 @@ func (zClient *ZookeeperClient) NodeNameW(path string, nameContext context.Conte
 func (zClient *ZookeeperClient) ChildrenW(path string) ([]string, *zk.Stat, <-chan zk.Event, error) {
 	ch, stat, event, err := zClient.conn.ChildrenW(path)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf( "zookeeper childrenW failed with err %s", err.Error())
+		return nil, nil, nil, fmt.Errorf("zookeeper childrenW failed with err %s", err.Error())
 	}
 	return ch, stat, event, nil
 }
@@ -290,7 +290,7 @@ func (zClient *ZookeeperClient) WatchForever(path string, nameContext context.Co
 	data, stat, err := zClient.conn.Get(path)
 	if err != nil {
 		fmt.Errorf("Unable to Fetch Node Data")
-		return nil, fmt.Errorf( "zookeeper get failed with error %s", err.Error())
+		return nil, fmt.Errorf("zookeeper get failed with error %s", err.Error())
 	}
 	if !bytes.Equal([]byte(""), data) {
 		go func() { channel <- data }()

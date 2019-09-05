@@ -4,25 +4,27 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"time"
+
 	"github.com/Abhishekvrshny/dCheck/internal/constants"
 	"github.com/Abhishekvrshny/dCheck/internal/models"
+	"github.com/Abhishekvrshny/dCheck/pkg/color"
 	"github.com/Abhishekvrshny/dCheck/pkg/zookeeper"
 	"github.com/samuel/go-zookeeper/zk"
-	"time"
 )
 
 type Worker struct {
-	zkClient *zookeeper.ZookeeperClient
-	quitHandler func()
-	id string
+	zkClient          *zookeeper.ZookeeperClient
+	quitHandler       func()
+	id                string
 	controllerContext context.Context
-	cancelFunc context.CancelFunc
-	doneList []chan bool
-	stopChan chan bool
+	cancelFunc        context.CancelFunc
+	doneList          []chan bool
+	stopChan          chan bool
 }
 
-func New(zkClient *zookeeper.ZookeeperClient, id string) *Worker{
-	w := &Worker{zkClient:zkClient, id:id}
+func New(zkClient *zookeeper.ZookeeperClient, id string) *Worker {
+	w := &Worker{zkClient: zkClient, id: id}
 	w.controllerContext, w.cancelFunc = context.WithCancel(context.Background())
 	return w
 }
@@ -48,11 +50,13 @@ func (w *Worker) control(path string) {
 		case wData := <-wCh:
 			w.stopAllChecks()
 			urls := models.URLs{}
-			err := json.Unmarshal(wData,&urls)
+			err := json.Unmarshal(wData, &urls)
+			fmt.Printf(color.BLUESTART)
+			fmt.Printf("WORKER : got updated payload : %+v\n", urls.U)
+			fmt.Printf(color.BLUEEND)
 			if err != nil {
 				fmt.Printf("error in unmarshalling")
 			}
-			fmt.Println(urls)
 			w.checkURLs(urls.U)
 		case <-w.controllerContext.Done():
 			w.stopAllChecks()
@@ -63,33 +67,38 @@ func (w *Worker) control(path string) {
 }
 
 func (w *Worker) checkURLs(urls []string) {
+	i := 1
+	fmt.Printf(color.BLUESTART)
+	// TODO: Add worker pool instead of spawning goroutines
 	for _, url := range urls {
 		ticker := time.NewTicker(1 * time.Second)
 		done := make(chan bool)
-		w.doneList = append(w.doneList,done)
-		go w.checkURL(url, ticker, done)
+		w.doneList = append(w.doneList, done)
+		go w.checkURL(url, ticker, done, i)
+		i += 1
 	}
 }
 
-func (w *Worker) checkURL(url string, ticker *time.Ticker, done chan bool) {
+func (w *Worker) checkURL(url string, ticker *time.Ticker, done chan bool, gid int) {
 	for {
 		select {
 		case <-done:
 			return
 		case _ = <-ticker.C:
-			fmt.Printf("Checking URL %s\n", url)
+			fmt.Printf("WORKER : ID %s : GOROUTINE %d : checking URL %s\n", w.id, gid, url)
 		}
 	}
 }
 
 func (w *Worker) Stop() {
 	w.cancelFunc()
-	<- w.stopChan
+	<-w.stopChan
 }
 
 func (w *Worker) stopAllChecks() {
 	for _, d := range w.doneList {
 		d <- true
 	}
+	fmt.Printf(color.BLUEEND)
+	w.doneList = w.doneList[:0]
 }
-

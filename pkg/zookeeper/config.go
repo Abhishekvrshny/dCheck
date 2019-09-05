@@ -3,12 +3,12 @@ package zookeeper
 import "time"
 
 type ZKConfig struct {
-	Hosts           []string
-	SessionTimeout  time.Duration
-	RootPath        string
-	RetryCount      int
-	Paths           []string
-	RetrySleep      time.Duration
+	Hosts          []string
+	SessionTimeout time.Duration
+	RootPath       string
+	RetryCount     int
+	Paths          []string
+	RetrySleep     time.Duration
 }
 
 type NodeMap map[string][]byte

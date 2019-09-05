@@ -1,8 +1,9 @@
 package controller
 
 import (
-	"github.com/Abhishekvrshny/dCheck/pkg/zookeeper"
 	"net/http"
+
+	"github.com/Abhishekvrshny/dCheck/pkg/zookeeper"
 )
 
 type Controller struct {

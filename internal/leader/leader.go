@@ -8,6 +8,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/Abhishekvrshny/dCheck/pkg/color"
+
 	"github.com/Abhishekvrshny/dCheck/internal/models"
 
 	"github.com/Abhishekvrshny/dCheck/internal/constants"
@@ -70,7 +72,9 @@ func (l *Leader) createBasePaths() error {
 }
 
 func (l *Leader) control() {
-	fmt.Printf("I am the Leader\n")
+	fmt.Printf(color.YELLOWSTART)
+	fmt.Printf("LEADER : I am the Leader\n")
+	fmt.Printf(color.YELLOWEND)
 	workerCh, err := l.setPathWatchWithRetries(l.zkClient.Config.RootPath + "/" + constants.WORKERSPATH)
 	if err != nil {
 		fmt.Printf("Unable to set watch on %s", constants.WORKERSPATH)
@@ -85,12 +89,16 @@ func (l *Leader) control() {
 		select {
 		case workerEvent := <-workerCh:
 			l.workers = workerEvent.GetNodeNames()
-			fmt.Printf("workers %v\n", l.workers)
+			fmt.Printf(color.YELLOWSTART)
+			fmt.Printf("LEADER : list of workers : %v\n", l.workers)
+			fmt.Printf(color.YELLOWEND)
 			l.distributeURLs()
 			break
 		case urlEvent := <-urlCh:
 			l.urls = urlEvent.GetNodeNames()
-			fmt.Printf("urls %v\n", l.urls)
+			fmt.Printf(color.YELLOWSTART)
+			fmt.Printf("LEADER : list of urls : %v\n", l.urls)
+			fmt.Printf(color.YELLOWEND)
 			l.distributeURLs()
 			break
 		case <-l.controllerContext.Done():
@@ -141,16 +149,20 @@ func (l *Leader) distributeURLs() {
 		newData, _ := json.Marshal(v)
 		oldData, stat, err := l.zkClient.Get(workerPath)
 		if err != nil {
-			fmt.Printf("updateAssignment: Error in updating worker, %s", err.Error())
+			fmt.Printf("LEADER : updateAssignment: Error in updating worker, %s", err.Error())
 		}
 		if bytes.Compare(newData, oldData) != 0 {
-			fmt.Printf("Updating data for %+v\n", k)
+			fmt.Printf(color.YELLOWSTART)
+			fmt.Printf("LEADER : updating data for worker : %+v : %+v\n", k, v.U)
+			fmt.Printf(color.YELLOWEND)
 			_, err = l.zkClient.Update(workerPath, newData, stat.Version)
 			if err != nil {
 				fmt.Printf("updateAssignment: Error in updating worker, %s\n", err.Error())
 			}
 		} else {
-			fmt.Printf("Not updating data for %+v\n", k)
+			fmt.Printf(color.YELLOWSTART)
+			fmt.Printf("LEADER : not updating data for worker : %+v\n", k)
+			fmt.Printf(color.YELLOWEND)
 		}
 
 	}
@@ -158,5 +170,5 @@ func (l *Leader) distributeURLs() {
 
 func (l *Leader) Stop() {
 	l.cancelFun()
-	<- l.shutdownChan
+	<-l.shutdownChan
 }
