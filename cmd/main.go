@@ -28,12 +28,20 @@ func main() {
 	zkClient := initZK()
 
 	ldr := leader.New(zkClient)
-	ldr.Run()
+	err := ldr.Run()
+	if err != nil {
+		fmt.Printf("error running leader %s", err.Error())
+		os.Exit(2)
+	}
 	// just give some time for leader to come up,
 	// should not be required though
 	time.Sleep(5)
 	wrkr := worker.New(zkClient, *id)
-	wrkr.Run()
+	err = wrkr.Run()
+	if err != nil {
+		fmt.Printf("error running worker %s", err.Error())
+		os.Exit(3)
+	}
 
 	c := make(chan os.Signal, 1)
 	// accept graceful shutdowns when quit via SIGINT (Ctrl+C)
