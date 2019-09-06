@@ -138,7 +138,7 @@ func (l *Leader) distributeURLs() {
 		if _, ok := workerData[l.workers[targetWorker]]; !ok {
 			workerData[l.workers[targetWorker]] = models.URLs{[]string{l.urls[i]}}
 		} else {
-			urls := append(workerData[l.workers[targetWorker]].U, l.urls[i])
+			urls := append(workerData[l.workers[targetWorker]].ListOfUrls, l.urls[i])
 			workerData[l.workers[targetWorker]] = models.URLs{urls}
 		}
 	}
@@ -158,7 +158,7 @@ func (l *Leader) distributeURLs() {
 			fmt.Printf("LEADER : updateAssignment: Error in updating worker, %s", err.Error())
 		}
 		if bytes.Compare(newData, oldData) != 0 {
-			fmt.Printf("%sLEADER : updating data for worker : %+v : %+v%s\n", color.YELLOWSTART, k, v.U, color.YELLOWEND)
+			fmt.Printf("%sLEADER : updating data for worker : %+v : %+v%s\n", color.YELLOWSTART, k, v.ListOfUrls, color.YELLOWEND)
 			_, err = l.zkClient.Update(workerPath, newData, stat.Version)
 			if err != nil {
 				fmt.Printf("updateAssignment: Error in updating worker, %s\n", err.Error())

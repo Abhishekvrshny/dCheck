@@ -55,12 +55,12 @@ func (w *Worker) control(path string) {
 			urls := models.URLs{}
 			err := json.Unmarshal(wData, &urls)
 			fmt.Printf(color.BLUESTART)
-			fmt.Printf("WORKER : got updated payload : %+v\n", urls.U)
+			fmt.Printf("WORKER : got updated payload : %+v\n", urls.ListOfUrls)
 			fmt.Printf(color.BLUEEND)
 			if err != nil {
 				fmt.Printf("error in unmarshalling")
 			}
-			w.checkURLs(urls.U)
+			w.checkURLs(urls.ListOfUrls)
 		case <-w.controllerContext.Done():
 			w.stopAllChecks()
 			w.stopChan <- true

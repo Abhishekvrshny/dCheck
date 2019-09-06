@@ -34,8 +34,8 @@ func main() {
 		os.Exit(2)
 	}
 	// just give some time for leader to come up,
-	// should not be required though
-	time.Sleep(5)
+	// can be handled differently though
+	time.Sleep(5*time.Second)
 	wrkr := worker.New(zkClient, *id)
 	err = wrkr.Run()
 	if err != nil {
