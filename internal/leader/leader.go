@@ -8,13 +8,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/Abhishekvrshny/dCheck/pkg/color"
-
-	"github.com/Abhishekvrshny/dCheck/internal/models"
+	"github.com/samuel/go-zookeeper/zk"
 
 	"github.com/Abhishekvrshny/dCheck/internal/constants"
+	"github.com/Abhishekvrshny/dCheck/internal/models"
+	"github.com/Abhishekvrshny/dCheck/pkg/color"
 	"github.com/Abhishekvrshny/dCheck/pkg/zookeeper"
-	"github.com/samuel/go-zookeeper/zk"
 )
 
 type Leader struct {
@@ -43,6 +42,7 @@ func (l *Leader) Run() error {
 	return nil
 }
 
+// LeaderStart runs when leader is elected
 func (l *Leader) LeaderStart() {
 	err := l.createBasePaths()
 	if err != nil {
@@ -51,10 +51,12 @@ func (l *Leader) LeaderStart() {
 	go l.control()
 }
 
+// LeaderStop runs when leader is stopped
 func (l *Leader) LeaderStop() {
 	l.cancelFun()
 }
 
+// createBasePaths is preparatory step to get all root paths created
 func (l *Leader) createBasePaths() error {
 	for path, _ := range l.zkClient.Config.Paths {
 		absPath := l.zkClient.Config.RootPath + "/" + l.zkClient.Config.Paths[path]
@@ -71,9 +73,10 @@ func (l *Leader) createBasePaths() error {
 	return nil
 }
 
+// control is where actual control loop of the leader runs
 func (l *Leader) control() {
 	fmt.Printf(color.YELLOWSTART)
-	fmt.Printf("LEADER : I am the Leader\n")
+	fmt.Printf("%sLEADER : I am the Leader%s\n", color.YELLOWSTART, color.YELLOWEND)
 	fmt.Printf(color.YELLOWEND)
 	workerCh, err := l.setPathWatchWithRetries(l.zkClient.Config.RootPath + "/" + constants.WORKERSPATH)
 	if err != nil {
@@ -89,16 +92,12 @@ func (l *Leader) control() {
 		select {
 		case workerEvent := <-workerCh:
 			l.workers = workerEvent.GetNodeNames()
-			fmt.Printf(color.YELLOWSTART)
-			fmt.Printf("LEADER : list of workers : %v\n", l.workers)
-			fmt.Printf(color.YELLOWEND)
+			fmt.Printf("%sLEADER : list of workers : %v%s\n", color.YELLOWSTART, l.workers, color.YELLOWEND)
 			l.distributeURLs()
 			break
 		case urlEvent := <-urlCh:
 			l.urls = urlEvent.GetNodeNames()
-			fmt.Printf(color.YELLOWSTART)
-			fmt.Printf("LEADER : list of urls : %v\n", l.urls)
-			fmt.Printf(color.YELLOWEND)
+			fmt.Printf("%sLEADER : list of urls : %v%s\n", color.YELLOWSTART, l.urls, color.YELLOWEND)
 			l.distributeURLs()
 			break
 		case <-l.controllerContext.Done():
@@ -109,6 +108,7 @@ func (l *Leader) control() {
 	}
 }
 
+// setPathWatchWithRetries helper function over zk client
 func (l *Leader) setPathWatchWithRetries(path string) (<-chan zookeeper.NodeNameEvent, error) {
 	retryTicker := time.NewTicker(l.zkClient.Config.RetrySleep * time.Second)
 	timeout := time.After(time.Duration(l.zkClient.Config.RetryCount) * l.zkClient.Config.RetrySleep * time.Second)
@@ -127,8 +127,9 @@ func (l *Leader) setPathWatchWithRetries(path string) (<-chan zookeeper.NodeName
 	}
 }
 
+// distributeURLs is some really dumb way to distribute urls amongst workers, but it works!
 func (l *Leader) distributeURLs() {
-	if len(l.workers) == 0 || len(l.urls) == 0 {
+	if len(l.workers) == 0 {
 		return
 	}
 	workerData := make(map[string]models.URLs, len(l.workers))
@@ -139,6 +140,11 @@ func (l *Leader) distributeURLs() {
 		} else {
 			urls := append(workerData[l.workers[targetWorker]].U, l.urls[i])
 			workerData[l.workers[targetWorker]] = models.URLs{urls}
+		}
+	}
+	if len(l.urls) < len(l.workers) {
+		for i := len(l.urls); i < len(l.workers); i++ {
+			workerData[l.workers[i]] = models.URLs{[]string{}}
 		}
 	}
 
@@ -152,22 +158,19 @@ func (l *Leader) distributeURLs() {
 			fmt.Printf("LEADER : updateAssignment: Error in updating worker, %s", err.Error())
 		}
 		if bytes.Compare(newData, oldData) != 0 {
-			fmt.Printf(color.YELLOWSTART)
-			fmt.Printf("LEADER : updating data for worker : %+v : %+v\n", k, v.U)
-			fmt.Printf(color.YELLOWEND)
+			fmt.Printf("%sLEADER : updating data for worker : %+v : %+v%s\n", color.YELLOWSTART, k, v.U, color.YELLOWEND)
 			_, err = l.zkClient.Update(workerPath, newData, stat.Version)
 			if err != nil {
 				fmt.Printf("updateAssignment: Error in updating worker, %s\n", err.Error())
 			}
 		} else {
-			fmt.Printf(color.YELLOWSTART)
-			fmt.Printf("LEADER : not updating data for worker : %+v\n", k)
-			fmt.Printf(color.YELLOWEND)
+			fmt.Printf("%sLEADER : not updating data for worker : %+v%s\n", color.YELLOWSTART, k, color.YELLOWEND)
 		}
 
 	}
 }
 
+// Stop gracefully shuts down the node
 func (l *Leader) Stop() {
 	l.cancelFun()
 	<-l.shutdownChan

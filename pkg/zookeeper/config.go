@@ -11,16 +11,10 @@ type ZKConfig struct {
 	RetrySleep     time.Duration
 }
 
-type NodeMap map[string][]byte
-
 type NodeNameEvent struct {
 	NodeNames []string
 }
 
 func (nne *NodeNameEvent) GetNodeNames() []string {
 	return nne.NodeNames
-}
-
-type NodeDataEvent struct {
-	DataMap NodeMap
 }

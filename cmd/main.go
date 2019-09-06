@@ -3,14 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/Abhishekvrshny/dCheck/internal/constants"
-	"github.com/Abhishekvrshny/dCheck/internal/controller"
 	"github.com/Abhishekvrshny/dCheck/internal/leader"
 	"github.com/Abhishekvrshny/dCheck/internal/worker"
 	"github.com/Abhishekvrshny/dCheck/pkg/zookeeper"
@@ -29,10 +27,10 @@ func main() {
 
 	zkClient := initZK()
 
-	ctrlr := controller.New(zkClient)
-
 	ldr := leader.New(zkClient)
 	ldr.Run()
+	// just give some time for leader to come up,
+	// should not be required though
 	time.Sleep(5)
 	wrkr := worker.New(zkClient, *id)
 	wrkr.Run()
@@ -42,10 +40,12 @@ func main() {
 	// or SIGTERM. SIGKILL, SIGQUIT will not be caught.
 	signal.Notify(c, syscall.SIGTERM, syscall.SIGINT)
 
+	/* TODO: Take urls from a REST endpoint
+	ctrlr := controller.New(zkClient)
 	mux := http.NewServeMux()
 	mux.HandleFunc("/check", ctrlr.Check)
-
-	//go http.ListenAndServe(fmt.Sprintf(":%s", *port), mux)
+	go http.ListenAndServe(fmt.Sprintf(":%s", *port), mux)
+	*/
 	<-c
 	wrkr.Stop()
 	ldr.Stop()

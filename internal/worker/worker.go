@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/samuel/go-zookeeper/zk"
+
 	"github.com/Abhishekvrshny/dCheck/internal/constants"
 	"github.com/Abhishekvrshny/dCheck/internal/models"
 	"github.com/Abhishekvrshny/dCheck/pkg/color"
 	"github.com/Abhishekvrshny/dCheck/pkg/zookeeper"
-	"github.com/samuel/go-zookeeper/zk"
 )
 
 type Worker struct {
@@ -29,6 +30,7 @@ func New(zkClient *zookeeper.ZookeeperClient, id string) *Worker {
 	return w
 }
 
+// Run creates ephemeral node in zk for the worker and invokes control
 func (w *Worker) Run() error {
 	wPath := w.zkClient.Config.RootPath + "/" + constants.WORKERSPATH + "/" + w.id
 	_, err := w.zkClient.Create(wPath, []byte(""), zk.FlagEphemeral, zk.WorldACL(zk.PermAll), false)
@@ -39,6 +41,7 @@ func (w *Worker) Run() error {
 	return nil
 }
 
+// control loop of the worker
 func (w *Worker) control(path string) {
 	wCh, err := w.zkClient.WatchForever(path, w.controllerContext)
 	if err != nil {
@@ -78,6 +81,7 @@ func (w *Worker) checkURLs(urls []string) {
 	}
 }
 
+// checkURL is the actual task that worker does
 func (w *Worker) checkURL(url string, ticker *time.Ticker, done chan bool, gid int) {
 	for {
 		select {
@@ -89,11 +93,13 @@ func (w *Worker) checkURL(url string, ticker *time.Ticker, done chan bool, gid i
 	}
 }
 
+// Stop to gracefully shut down the worker
 func (w *Worker) Stop() {
 	w.cancelFunc()
 	<-w.stopChan
 }
 
+// stopAllChecks is yet another helper
 func (w *Worker) stopAllChecks() {
 	for _, d := range w.doneList {
 		d <- true
